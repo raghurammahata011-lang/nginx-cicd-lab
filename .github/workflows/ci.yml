@@ -1,0 +1,71 @@
+
+name: Kubernetes CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  validate-application:
+    name: Validate HTML Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Check application file
+        run: |
+          test -f app/index.html
+          echo "Application file exists"
+
+      - name: Validate HTML content
+        run: |
+          grep -qi '<title>My Kubernetes CI/CD Lab</title>' app/index.html
+          grep -qi '<h1>Hello Kubernetes!</h1>' app/index.html
+          echo "HTML content validation successful"
+
+      - name: Parse HTML using Python
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class MyHTMLParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.title_found = False
+                  self.heading_found = False
+                  self.in_title = False
+
+              def handle_starttag(self, tag, attrs):
+                  if tag == "title":
+                      self.in_title = True
+
+              def handle_endtag(self, tag):
+                  if tag == "title":
+                      self.in_title = False
+
+              def handle_data(self, data):
+                  if self.in_title and "My Kubernetes CI/CD Lab" in data:
+                      self.title_found = True
+                  if "Hello Kubernetes!" in data:
+                      self.heading_found = True
+
+          parser = MyHTMLParser()
+          parser.feed(Path("app/index.html").read_text())
+
+          assert parser.title_found, "Title missing"
+          assert parser.heading_found, "Heading missing"
+
+          print("HTML parsing successful")
+          print("All application tests passed")
+          PY
+

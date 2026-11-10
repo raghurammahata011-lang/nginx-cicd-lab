@@ -1,0 +1,13 @@
+
+# Private infrastructure inventory
+infra/
+scripts/collect-infrastructure.sh
+INFRASTRUCTURE.md
+
+# Credentials and private configuration
+*.key
+*.pem
+*.kubeconfig
+kubeconfig
+.env
+.env.*
